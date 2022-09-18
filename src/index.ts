@@ -43,14 +43,11 @@ image
         );
         const size = Math.round(options.ratiosg * gap);
 
-        // const chunks: any[][] = [];
         let done = false;
         let ix = 0;
         let iy = 0;
         let left = gap;
         let top = gap;
-        // let line: any[] = [];
-        // chunks.push(line);
 
         const promises: Promise<OverlayOptions>[] = [];
 
@@ -71,12 +68,9 @@ image
                     })
                     .toBuffer()
                     .then((input) => {
-                        // console.log(ileft, itop, iix, iiy);
                         return { input, left: iix * size, top: iiy * size };
                     })
             );
-
-            // line.push(chunk);
 
             ix++;
             left += gap + size;
@@ -87,8 +81,6 @@ image
                 top += gap + size;
                 if (top + size > imageSize.height) {
                     done = true;
-                } else {
-                    // line = [];
                 }
             }
         }
@@ -113,13 +105,3 @@ image
                 .toFile("out.png");
         });
     });
-
-// .extract({left, top, width, height})
-// .toFile(output)
-// .toBuffer()
-// .then((data) => {
-//     console.log(data);
-// })
-// .catch((ex) => {
-//     throw ex;
-// });
