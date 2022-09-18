@@ -74,24 +74,31 @@ image
         const newImageWidth = chunks * size;
         const newImageHeight = getChunks(imageSize.height, gap, size) * size;
 
+        const index2Pixels = (index: number) => {
+            return gap + index * (gap + size);
+        };
+        const index2PixelsOverlay = (index: number) => {
+            return index * size;
+        };
+
         let done = false;
         let ix = 0;
         let iy = 0;
-        let left = gap;
-        let top = gap;
 
         const promises: Promise<OverlayOptions>[] = [];
 
         while (!done) {
-            const iix = ix;
-            const iiy = iy;
-            const ileft = left;
-            const itop = top;
+            //
+            // NOTE: Need to do this outside the then because by the time
+            // the then fires the ix's have changed! That or we need to set ix to another variable, say iix.
+            //
+            const left = index2PixelsOverlay(ix);
+            const top = index2PixelsOverlay(iy);
             promises.push(
                 image
                     .extract({
-                        left: ileft,
-                        top: itop,
+                        left: index2Pixels(ix),
+                        top: index2Pixels(iy),
                         width: size,
                         height: size,
                     })
@@ -99,20 +106,17 @@ image
                     .then((input) => {
                         return {
                             input,
-                            left: iix * size,
-                            top: iiy * size,
+                            left,
+                            top,
                         };
                     })
             );
 
             ix++;
-            left += gap + size;
-            if (left + size > imageSize.width) {
+            if (index2Pixels(ix) + size > imageSize.width) {
                 ix = 0;
-                left = gap;
                 iy++;
-                top += gap + size;
-                if (top + size > imageSize.height) {
+                if (index2Pixels(iy) + size > imageSize.height) {
                     done = true;
                 }
             }
