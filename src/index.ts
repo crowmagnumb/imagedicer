@@ -35,6 +35,17 @@ function getChunks(imageSize: number, gap: number, size: number) {
     return Math.round((imageSize / gap - 1) / (1 + size / gap));
 }
 
+function blankImage(width: number, height: number) {
+    return sharp({
+        create: {
+            width,
+            height,
+            channels: 4,
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+    });
+}
+
 image
     .metadata()
     .then((data) => {
@@ -45,8 +56,6 @@ image
         return { width: data.width, height: data.height } as ImageSize;
     })
     .then((imageSize) => {
-        // console.log(imageSize);
-
         let size: number;
         let chunks: number;
         let gap: number;
@@ -74,8 +83,6 @@ image
         const promises: Promise<OverlayOptions>[] = [];
 
         while (!done) {
-            // console.log(left, top, ix, iy);
-
             const iix = ix;
             const iiy = iy;
             const ileft = left;
@@ -111,17 +118,8 @@ image
             }
         }
 
-        // console.log(newImageWidth, newImageHeight);
         Promise.all(promises).then((overlays) => {
-            // console.log(overlays);
-            sharp({
-                create: {
-                    width: newImageWidth,
-                    height: newImageHeight,
-                    channels: 4,
-                    background: { r: 0, g: 0, b: 0, alpha: 0 },
-                },
-            })
+            blankImage(newImageWidth, newImageHeight)
                 .composite(overlays)
                 .png()
                 .toFile("diced.png");
