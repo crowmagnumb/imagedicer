@@ -102,6 +102,6 @@ image
             })
                 .composite(overlays)
                 .png()
-                .toFile("out.png");
+                .toFile("diced.png");
         });
     });
