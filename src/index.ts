@@ -9,16 +9,20 @@ const defs = [
         defaultOption: true,
     },
     {
-        name: "ratiosg",
+        name: "ratio",
         alias: "r",
         type: Number,
         defaultValue: 1,
     },
     {
-        name: "pixels",
-        alias: "p",
+        name: "chunks",
+        alias: "c",
         type: Number,
-        defaultValue: 10,
+    },
+    {
+        name: "size",
+        alias: "s",
+        type: Number,
     },
 ];
 const options = cla(defs);
@@ -26,6 +30,10 @@ const options = cla(defs);
 const image = sharp(options.image);
 
 type ImageSize = { width: number; height: number };
+
+function getChunks(imageSize: number, gap: number, size: number) {
+    return Math.round((imageSize / gap - 1) / (1 + size / gap));
+}
 
 image
     .metadata()
@@ -38,10 +46,24 @@ image
     })
     .then((imageSize) => {
         // console.log(imageSize);
-        const gap = Math.round(
-            imageSize.width / ((options.ratiosg + 1) * options.pixels) + 1
-        );
-        const size = Math.round(options.ratiosg * gap);
+
+        let size: number;
+        let chunks: number;
+        let gap: number;
+        if (options.size) {
+            gap = Math.round(options.size / options.ratio);
+            size = options.size;
+            chunks = getChunks(imageSize.width, gap, options.size);
+        } else {
+            chunks = options.chunks || 20;
+            gap = Math.round(
+                imageSize.width / ((options.ratio + 1) * chunks) + 1
+            );
+            size = Math.round(options.ratio * gap);
+        }
+
+        const newImageWidth = chunks * size;
+        const newImageHeight = getChunks(imageSize.height, gap, size) * size;
 
         let done = false;
         let ix = 0;
@@ -68,7 +90,11 @@ image
                     })
                     .toBuffer()
                     .then((input) => {
-                        return { input, left: iix * size, top: iiy * size };
+                        return {
+                            input,
+                            left: iix * size,
+                            top: iiy * size,
+                        };
                     })
             );
 
@@ -84,10 +110,6 @@ image
                 }
             }
         }
-
-        const newImageWidth = options.pixels * size;
-        const newImageHeight =
-            Math.round((imageSize.height / gap - 1) / (1 + size / gap)) * size;
 
         // console.log(newImageWidth, newImageHeight);
         Promise.all(promises).then((overlays) => {
