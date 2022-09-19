@@ -214,7 +214,6 @@ image
                         )
                     );
 
-                    // return;
                     image = sharp(options.output);
                     rotated = sharp(options.output).rotate(180);
 
