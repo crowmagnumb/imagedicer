@@ -57,25 +57,25 @@ function isOdd(num: number) {
 }
 
 const writeOutput = (image: Sharp) => {
-    return image.png().toFile(options.output);
+    return image.toFile(options.output);
 };
 
 const dice = (image: Sharp, imageSize: ImageSize) => {
     const getChunks = (imageSize: number, gap: number, size: number) => {
-        return Math.round((imageSize / gap - 1) / (1 + size / gap));
+        return Math.floor((imageSize / gap - 1) / (1 + size / gap));
     };
 
     let size: number;
     let chunks: number;
     let gap: number;
     if (options.size) {
-        gap = Math.round(options.size / options.ratio);
+        gap = Math.floor(options.size / options.ratio);
         size = options.size;
         chunks = getChunks(imageSize.width, gap, options.size);
     } else {
         chunks = options.chunks || 20;
-        gap = Math.round(imageSize.width / ((options.ratio + 1) * chunks) + 1);
-        size = Math.round(options.ratio * gap);
+        gap = Math.floor(imageSize.width / ((options.ratio + 1) * chunks) + 1);
+        size = Math.floor(options.ratio * gap);
     }
 
     const newImageWidth = chunks * size;
@@ -147,13 +147,17 @@ image
         return { width: data.width, height: data.height } as ImageSize;
     })
     .then((imageSize) => {
+        console.log(imageSize);
         switch (options.type) {
             case "dice":
                 dice(image, imageSize);
                 break;
-            case "blah":
+            case "test":
+            case "testr":
+                let testr = "testr" === options.type;
+
                 const getChunks = (imageSize: number, size: number) => {
-                    return Math.round(imageSize / size);
+                    return Math.floor(imageSize / size);
                 };
                 let size: number;
                 let chunks: number;
@@ -161,31 +165,42 @@ image
                     size = options.size;
                     chunks = getChunks(imageSize.width, options.size);
                 } else {
-                    size = Math.round(imageSize.width / options.chunks);
+                    size = Math.floor(imageSize.width / options.chunks);
                     chunks = options.chunks;
                 }
                 let ychunks = getChunks(imageSize.height, size);
                 const newImageWidth = chunks * size;
                 const newImageHeight = ychunks * size;
 
+                let rotated = sharp(options.image).rotate(180);
+
                 const promises: Promise<OverlayOptions>[] = [];
                 for (let ii = 0; ii < chunks; ii++) {
-                    const left = ii * size;
+                    let left: number;
+                    let im: Sharp;
+                    if (testr && isOdd(ii)) {
+                        im = rotated;
+                        left = newImageWidth - (ii * size + size);
+                    } else {
+                        im = image;
+                        left = ii * size;
+                    }
+                    let extract = {
+                        left,
+                        top: 0,
+                        width: size,
+                        height: imageSize.height,
+                    };
+                    // console.log(extract);
                     promises.push(
-                        image
-                            .extract({
-                                left,
-                                top: 0,
-                                width: size,
-                                height: imageSize.height,
-                            })
-                            .flop(isOdd(ii))
-                            // .rotate(isOdd(ii) ? 180 : 0)
+                        im
+                            .extract(extract)
+                            .flop(!testr && isOdd(ii))
                             .toBuffer()
                             .then((input) => {
                                 return {
                                     input,
-                                    left,
+                                    left: ii * size,
                                     top: 0,
                                 };
                             })
@@ -193,12 +208,6 @@ image
                 }
 
                 Promise.all(promises).then(async (overlays) => {
-                    // let buffer = await blankImage(newImageWidth, newImageHeight)
-                    //     .composite(overlays)
-                    //     .toBuffer();
-
-                    // image = sharp(buffer);
-
                     await writeOutput(
                         blankImage(newImageWidth, newImageHeight).composite(
                             overlays
@@ -206,29 +215,36 @@ image
                     );
 
                     // return;
-
                     image = sharp(options.output);
+                    rotated = sharp(options.output).rotate(180);
 
                     const promises: Promise<OverlayOptions>[] = [];
                     for (let ii = 0; ii < ychunks; ii++) {
-                        const top = ii * size;
-                        // console.log(ii, top);
+                        let top: number;
+                        let im: Sharp;
+                        if (testr && isOdd(ii)) {
+                            im = rotated;
+                            top = newImageHeight - (ii * size + size);
+                        } else {
+                            im = image;
+                            top = ii * size;
+                        }
+                        let extract = {
+                            left: 0,
+                            top,
+                            width: newImageWidth,
+                            height: size,
+                        };
                         promises.push(
-                            image
-                                .extract({
-                                    left: 0,
-                                    top,
-                                    width: newImageWidth,
-                                    height: size,
-                                })
-                                .flip(isOdd(ii))
+                            im
+                                .extract(extract)
+                                .flip(!testr && isOdd(ii))
                                 .toBuffer()
                                 .then((input) => {
-                                    // console.log(top, input);
                                     return {
                                         input,
                                         left: 0,
-                                        top,
+                                        top: ii * size,
                                     };
                                 })
                         );
