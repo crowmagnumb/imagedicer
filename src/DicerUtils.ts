@@ -28,7 +28,9 @@ export class DicerUtils {
         
             const newImageWidth = chunks * size;
             const newImageHeight = getChunks(imageSize.height, gap, size) * size;
-        
+
+            console.log(_size, _chunks, size, chunks, imageSize, newImageWidth, newImageHeight);
+
             const index2Pixels = (index: number) => {
                 return gap + index * (gap + size);
             };
@@ -97,7 +99,8 @@ export class DicerUtils {
                 let ychunks = getChunks(imageSize.height, size);
                 const newImageWidth = chunks * size;
                 const newImageHeight = ychunks * size;
-
+                console.log(_size, _chunks, size, chunks, imageSize, newImageWidth, newImageHeight);
+                
                 const promises: Promise<OverlayOptions>[] = [];
                 for (let ii = 0; ii < chunks; ii++) {
                     let left: number;
@@ -142,14 +145,13 @@ export class DicerUtils {
                             im = _image;
                             top = ii * size;
                         }
-                        let extract = {
+                        promises.push(
+                            im.extract({
                             left: 0,
                             top,
                             width: newImageWidth,
                             height: size,
-                        };
-                        promises.push(
-                            im.extract(extract, !testr && isOdd(ii))
+                        }, !testr && isOdd(ii))
                                 .then((input) => {
                                     return {
                                         input,

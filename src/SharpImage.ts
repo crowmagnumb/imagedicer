@@ -58,6 +58,7 @@ export class SharpImageFactory implements CrowImageFactory {
     }
 
     composite(width: number, height: number, overlays: OverlayOptions[]): CrowImage {
+        console.log(width, height);
         return SharpImage.fromSharp(this.blank(width, height).composite(overlays));
     }
 }
